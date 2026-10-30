@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/head :: head('Fixtures & results')}"></head>
+  <body>
+    <div class="app-shell">
+      <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb">
+            Management <span>/</span> <b>Fixtures & results</b>
+          </div>
+          <div class="top-actions">
+            <span class="date-chip">Match centre</span>
+            <div class="tiny-avatar">CO</div>
+          </div>
+        </header>
+        <section class="page-wrap">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">MATCH CENTRE</p>
+              <h1>Fixtures & results</h1>
+              <p class="subtitle">
+                Schedule matchdays and follow every result across the
+                competition.
+              </p>
+            </div>
+            <a class="button button-primary" href="#schedule-match"
+              >＋ Schedule match</a
+            >
+          </div>
+          <div class="notice" th:if="${notice}" th:text="${notice}"></div>
+          <div class="error-notice" th:if="${error}" th:text="${error}"></div>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">MATCHDAY LOG</p>
+                <h2 th:text="${currentTab == 'completed' ? 'Completed matches' : 'Upcoming fixtures'}">Upcoming fixtures</h2>
+              </div>
+              <form class="inline-form fixture-league-filter" method="get" th:action="@{/matches}" data-submit-on-change>
+                <input type="hidden" name="tab" th:value="${currentTab}" />
+                <label>League
+                  <select name="leagueId">
+                    <option value="" th:selected="${selectedLeagueId == null}" disabled>Choose a league</option>
+                    <option th:each="league : ${leagues}" th:value="${league.id}"
+                            th:selected="${selectedLeagueId != null and #strings.toString(selectedLeagueId) == #strings.toString(league.id)}"
+                            th:text="${league.name}">League</option>
+                  </select>
+                </label>
+              </form>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>KICK-OFF</th>
+                    <th>FIXTURE</th>
+                    <th>COMPETITION</th>
+                    <th>RESULT</th>
+                    <th>STATUS</th>
+                    <th>RECORD SCORE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="match : ${matches}">
+                    <td>
+                      <b
+                        th:text="${#temporals.format(match.matchDate.toLocalDateTime(), 'd MMM yyyy')}"
+                        >Date</b
+                      ><small
+                        class="cell-sub"
+                        th:text="${#temporals.format(match.matchDate.toLocalDateTime(), 'HH:mm')}"
+                        >15:00</small
+                      >
+                    </td>
+                    <td>
+                      <div class="match-pair">
+                        <b th:text="${match.home}">Home</b><span>vs</span
+                        ><b th:text="${match.away}">Away</b>
+                      </div>
+                    </td>
+                    <td>
+                      <b th:text="${match.league}">League</b
+                      ><small class="cell-sub" th:text="${match.season}"
+                        >Season</small
+                      >
+                    </td>
+                    <td
+                      class="score-cell"
+                      th:text="${match.status == 'Scheduled' and match.homeGoals == 0 and match.awayGoals == 0 ? '—' : match.homeGoals + ' - ' + match.awayGoals}"
+                    >
+                      —
+                    </td>
+                    <td>
+                      <span
+                        class="status-pill"
+                        th:classappend="${match.status == 'Completed' ? 'status-complete' : 'status-scheduled'}"
+                        th:text="${match.status}"
+                        >Scheduled</span
+                      >
+                    </td>
+                    <td>
+                      <form
+                        class="score-form"
+                        method="post"
+                        th:action="@{/matches/result}"
+                      >
+                        <input
+                          type="hidden"
+                          name="matchId"
+                          th:value="${match.id}"
+                        /><input type="hidden" name="leagueId" th:if="${selectedLeagueId != null}" th:value="${selectedLeagueId}" /><input
+                          name="homeGoals"
+                          type="number"
+                          min="0"
+                          max="99"
+                          required
+                          aria-label="Home goals"
+                          th:value="${match.homeGoals}"
+                        /><span>–</span
+                        ><input
+                          name="awayGoals"
+                          type="number"
+                          min="0"
+                          max="99"
+                          required
+                          aria-label="Away goals"
+                          th:value="${match.awayGoals}"
+                        /><button
+                          class="mini-save"
+                          type="submit"
+                          th:text="${match.status == 'Completed' ? 'Update' : 'Save'}"
+                        >
+                          Save
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                  <tr th:if="${matches.isEmpty()}">
+                    <td colspan="6" class="empty-row">
+                      <span th:if="${currentTab == 'completed'}">No completed matches match this league filter.</span>
+                      <span th:if="${currentTab == 'upcoming'}">No upcoming fixtures match this league filter. Schedule a match below.</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel form-panel" id="schedule-match">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">UPCOMING FIXTURE</p>
+                <h2>Schedule a match</h2>
+              </div>
+            </div>
+            <form class="form-grid" method="post" th:action="@{/matches}">
+              <label
+                >Competition & season<select name="seasonId" required>
+                  <option value="" disabled selected>Select season</option>
+                  <option
+                    th:each="season : ${seasons}"
+                    th:value="${season.id}"
+                    th:text="${season.name}"
+                  ></option></select></label
+              ><label
+                >Kick-off<input
+                  name="matchDate"
+                  type="datetime-local"
+                  required /></label
+              ><label
+                >Home club<select name="homeTeamId" required>
+                  <option value="" disabled selected>Select club</option>
+                  <option
+                    th:each="team : ${teams}"
+                    th:value="${team.id}"
+                    th:text="${team.name}"
+                  ></option></select></label
+              ><label
+                >Away club<select name="awayTeamId" required>
+                  <option value="" disabled selected>Select club</option>
+                  <option
+                    th:each="team : ${teams}"
+                    th:value="${team.id}"
+                    th:text="${team.name}"
+                  ></option></select></label
+              ><label
+                >Venue<select name="stadiumId" required>
+                  <option value="" disabled selected>Select stadium</option>
+                  <option
+                    th:each="stadium : ${stadiums}"
+                    th:value="${stadium.id}"
+                    th:text="${stadium.name}"
+                  ></option></select
+              ></label>
+              <div class="form-actions">
+                <button class="button button-primary" type="submit">
+                  Add to schedule
+                </button>
+              </div>
+            </form>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

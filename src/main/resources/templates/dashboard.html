@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/head :: head('Overview')}"></head>
+  <body>
+    <div class="app-shell">
+      <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb">Workspace <span>/</span> <b>Overview</b></div>
+          <div class="top-actions">
+            <span
+              class="date-chip"
+              th:text="${#temporals.format(#temporals.createNow(), 'EEE, d MMM yyyy')}"
+              >Today</span
+            >
+            <div class="tiny-avatar">CO</div>
+          </div>
+        </header>
+        <section class="page-wrap">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">COMPETITION CONTROL</p>
+              <h1>Good afternoon, admin <span class="wave">✳</span></h1>
+              <p class="subtitle">
+                Here’s what’s happening across your football operation.
+              </p>
+            </div>
+            <a class="button button-primary" th:href="@{/matches}"
+              ><span>＋</span> Schedule a match</a
+            >
+          </div>
+          <div class="stats-grid">
+            <article class="stat-card">
+              <div class="stat-top">
+                <span class="stat-icon green">⚑</span
+                ><span class="stat-caption">ACTIVE DIRECTORY</span>
+              </div>
+              <div class="stat-number" th:text="${teamCount}">0</div>
+              <div class="stat-foot">
+                <span class="stat-name">Clubs</span
+                ><span class="stat-note">registered teams</span>
+              </div>
+              <span class="sparkline spark-one">⌁</span>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top">
+                <span class="stat-icon blue">♙</span
+                ><span class="stat-caption">SQUAD ROSTERS</span>
+              </div>
+              <div class="stat-number" th:text="${playerCount}">0</div>
+              <div class="stat-foot">
+                <span class="stat-name">Players</span
+                ><span class="stat-note">in the database</span>
+              </div>
+              <span class="sparkline spark-two">⌁</span>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top">
+                <span class="stat-icon amber">◷</span
+                ><span class="stat-caption">ALL COMPETITIONS</span>
+              </div>
+              <div class="stat-number" th:text="${matchCount}">0</div>
+              <div class="stat-foot">
+                <span class="stat-name">Fixtures</span
+                ><span class="stat-note">scheduled & played</span>
+              </div>
+              <span class="sparkline spark-three">⌁</span>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top">
+                <span class="stat-icon violet">◉</span
+                ><span class="stat-caption">LEAGUE STRUCTURE</span>
+              </div>
+              <div class="stat-number" th:text="${leagueCount}">0</div>
+              <div class="stat-foot">
+                <span class="stat-name">Leagues</span
+                ><span class="stat-note">being managed</span>
+              </div>
+              <span class="sparkline spark-four">⌁</span>
+            </article>
+          </div>
+          <div class="dashboard-grid">
+            <section class="panel panel-large">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">THE RUN-IN</p>
+                  <h2>Recent fixtures</h2>
+                </div>
+                <a class="text-link" th:href="@{/matches}"
+                  >Full schedule <span>↗</span></a
+                >
+              </div>
+              <div class="fixture-list" th:if="${!matches.isEmpty()}">
+                <article class="fixture-row" th:each="match : ${matches}">
+                  <div class="fixture-date">
+                    <b
+                      th:text="${#temporals.format(match.matchDate.toLocalDateTime(), 'dd')}"
+                      >12</b
+                    ><span
+                      th:text="${#temporals.format(match.matchDate.toLocalDateTime(), 'MMM')}"
+                      >OCT</span
+                    >
+                  </div>
+                  <div class="fixture-main">
+                    <div class="fixture-teams">
+                      <b th:text="${match.home}">Home FC</b
+                      ><span
+                        th:text="${match.status == 'Scheduled' ? 'vs' : match.homeGoals + ' — ' + match.awayGoals}"
+                        >vs</span
+                      ><b th:text="${match.away}">Away FC</b>
+                    </div>
+                    <div class="fixture-meta">
+                      <span th:text="${match.league}">League</span><span>·</span
+                      ><span th:text="${match.season}">Season</span>
+                    </div>
+                  </div>
+                  <span
+                    class="status-pill"
+                    th:classappend="${match.status == 'Completed' ? 'status-complete' : 'status-scheduled'}"
+                    th:text="${match.status}"
+                    >Scheduled</span
+                  >
+                </article>
+              </div>
+              <div class="empty-state" th:if="${matches.isEmpty()}">
+                <div class="empty-icon">◷</div>
+                <b>The fixture list is clear</b>
+                <p>Schedule a match to get your competition moving.</p>
+                <a class="button button-secondary" th:href="@{/matches}"
+                  >Create first fixture</a
+                >
+              </div>
+            </section>
+          </div>
+          <section class="panel points-race-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">POINTS RACE</p>
+                <h2>Latest season in every league</h2>
+              </div>
+              <a class="text-link" th:href="@{/standings}">Full tables <span>↗</span></a>
+            </div>
+            <div class="race-grid" th:if="${leagueRaces != null and !leagueRaces.isEmpty()}">
+              <article class="race-card" th:each="race : ${leagueRaces}">
+                <div class="race-card-heading">
+                  <div>
+                    <h3 th:text="${race.league}">League</h3>
+                    <span th:text="${race.season}">Season</span>
+                  </div>
+                  <span class="race-live-dot" aria-label="Current table"></span>
+                </div>
+                <div class="table-scroll">
+                  <table>
+                    <thead>
+                      <tr><th>CLUB</th><th>PL</th><th>GD</th><th>PTS</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr th:each="row : ${race.rows}">
+                        <td><span class="rank-badge" th:text="${row.rank}">1</span><b th:text="${row.team}">Club</b></td>
+                        <td th:text="${row.played}">0</td>
+                        <td th:text="${row.gd}">0</td>
+                        <td><b class="points-cell" th:text="${row.points}">0</b></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </article>
+            </div>
+            <div class="empty-compact" th:if="${leagueRaces != null and leagueRaces.isEmpty()}">
+              Standings appear here once a season and clubs are registered.
+            </div>
+            <div class="table-scroll" th:if="${leagueRaces == null and !standings.isEmpty()}">
+              <table>
+                <thead><tr><th>CLUB</th><th>PL</th><th>GD</th><th>PTS</th></tr></thead>
+                <tbody>
+                  <tr th:each="row : ${standings}">
+                    <td><span class="rank-badge" th:text="${row.rank}">1</span><b th:text="${row.team}">Club</b></td>
+                    <td th:text="${row.played}">0</td><td th:text="${row.gd}">0</td><td><b th:text="${row.points}">0</b></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="empty-compact" th:if="${leagueRaces == null and standings.isEmpty()}">
+              Standings appear here once a season and clubs are registered.
+            </div>
+          </section>
+          <section class="panel scorers-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">MATCH CENTRE</p>
+                <h2>Latest goals</h2>
+              </div>
+            </div>
+            <div class="scorer-strip" th:if="${!scorers.isEmpty()}">
+              <div class="scorer-item" th:each="scorer : ${scorers}">
+                <span class="scorer-ball">●</span>
+                <div>
+                  <b th:text="${scorer.player}">Player</b
+                  ><small
+                    ><span th:text="${scorer.team}">Club</span> ·
+                    <span th:text="${scorer.minute}">12</span>’</small
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="empty-compact" th:if="${scorers.isEmpty()}">
+              Goal events from the scorers register will appear here.
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

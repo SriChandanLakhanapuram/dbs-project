@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/head :: head('Clubs')}"></head>
+  <body>
+    <div class="app-shell">
+      <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb">Management <span>/</span> <b>Clubs</b></div>
+          <div class="top-actions">
+            <span class="date-chip">Competition directory</span>
+            <div class="tiny-avatar">CO</div>
+          </div>
+        </header>
+        <section class="page-wrap">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">CLUB DIRECTORY</p>
+              <h1>Clubs</h1>
+              <p class="subtitle">
+                Manage teams, grounds, and the league they compete in.
+              </p>
+            </div>
+            <a class="button button-primary" href="#add-club">＋ Add club</a>
+          </div>
+          <div class="notice" th:if="${notice}" th:text="${notice}"></div>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">REGISTERED CLUBS</p>
+                <h2 th:text="${teams.size()} + ' clubs'">0 clubs</h2>
+              </div>
+              <form class="inline-form club-league-filter" method="get" th:action="@{/teams}" data-submit-on-change>
+                <label>League
+                  <select name="leagueId">
+                    <option value="">All leagues</option>
+                    <option th:each="league : ${leagues}" th:value="${league.id}"
+                            th:selected="${selectedLeagueId != null and #strings.toString(selectedLeagueId) == #strings.toString(league.id)}"
+                            th:text="${league.name}">League</option>
+                  </select>
+                </label>
+              </form>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>CLUB</th>
+                    <th>LEAGUE</th>
+                    <th>HOME GROUND</th>
+                    <th>PLAYERS</th>
+                    <th>FOUNDED</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="team : ${teams}">
+                    <td>
+                      <div class="entity-cell">
+                        <span
+                          class="crest"
+                          th:text="${#strings.substring(team.name, 0, 1)}"
+                          >C</span
+                        ><b th:text="${team.name}">Club</b>
+                      </div>
+                    </td>
+                    <td th:text="${team.league != null ? team.league : '—'}">
+                      League
+                    </td>
+                    <td th:text="${team.stadium != null ? team.stadium : '—'}">
+                      Ground
+                    </td>
+                    <td>
+                      <span class="count-chip" th:text="${team.players}"
+                        >0</span
+                      >
+                    </td>
+                    <td th:text="${team.founded != null ? team.founded : '—'}">
+                      —
+                    </td>
+                  </tr>
+                  <tr th:if="${teams.isEmpty()}">
+                    <td colspan="5" class="empty-row">
+                      No clubs yet. Use the form below to register the first
+                      one.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel form-panel" id="add-club">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">NEW CLUB</p>
+                <h2>Add a club</h2>
+              </div>
+            </div>
+            <form class="form-grid" method="post" th:action="@{/teams}">
+              <label
+                >Club name<input
+                  name="name"
+                  required
+                  maxlength="120"
+                  placeholder="e.g. Northbank FC" /></label
+              ><label
+                >League<select name="leagueId" required>
+                  <option value="" disabled selected>Select league</option>
+                  <option
+                    th:each="item : ${leagues}"
+                    th:value="${item.id}"
+                    th:text="${item.name}"
+                  ></option></select></label
+              ><label
+                >Home ground<select name="stadiumId">
+                  <option value="">Not assigned</option>
+                  <option
+                    th:each="item : ${stadiums}"
+                    th:value="${item.id}"
+                    th:text="${item.name}"
+                  ></option></select></label
+              ><label
+                >Founded<input
+                  name="foundedYear"
+                  type="number"
+                  min="1800"
+                  max="2100"
+                  placeholder="e.g. 1892"
+              /></label>
+              <div class="form-actions">
+                <button class="button button-primary" type="submit">
+                  Save club
+                </button>
+              </div>
+            </form>
+          </section>
+          <section class="panel form-panel" id="add-stadium">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">VENUE REGISTER</p>
+                <h2>Add a stadium</h2>
+              </div>
+            </div>
+            <form class="form-grid" method="post" th:action="@{/stadiums}">
+              <label
+                >Stadium name<input
+                  name="name"
+                  required
+                  maxlength="120"
+                  placeholder="e.g. Riverside Ground" /></label
+              ><label
+                >Location<input
+                  name="location"
+                  maxlength="160"
+                  placeholder="City or region" /></label
+              ><label
+                >Capacity<input
+                  name="capacity"
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 42000"
+              /></label>
+              <div class="form-actions">
+                <button class="button button-secondary" type="submit">
+                  Save stadium
+                </button>
+              </div>
+            </form>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

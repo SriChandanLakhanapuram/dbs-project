@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/head :: head('Standings')}"></head>
+  <body>
+    <div class="app-shell">
+      <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb">
+            Management <span>/</span> <b>Standings</b>
+          </div>
+          <div class="top-actions">
+            <span class="date-chip">Season tables</span>
+            <div class="tiny-avatar">CO</div>
+          </div>
+        </header>
+        <section class="page-wrap">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">THE TABLE</p>
+              <h1>Standings</h1>
+              <p class="subtitle">
+                Follow the points race, goal difference, and form across your
+                seasons.
+              </p>
+            </div>
+            <a class="button button-secondary" th:href="@{/matches}"
+              >View fixtures ↗</a
+            >
+          </div>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">LEAGUE PERFORMANCE</p>
+                <h2>Season tables</h2>
+              </div>
+              <div class="standings-tools">
+                <span class="table-hint">3 points for a win · 1 for a draw</span>
+                <form class="inline-form standings-league-filter" method="get" th:action="@{/standings}" data-submit-on-change>
+                  <label>League
+                    <select name="leagueId">
+                      <option value="" th:selected="${selectedLeagueId == null}" disabled>Choose a league</option>
+                      <option th:each="league : ${leagues}" th:value="${league.id}"
+                              th:selected="${selectedLeagueId != null and #strings.toString(selectedLeagueId) == #strings.toString(league.id)}"
+                              th:text="${league.name}">League</option>
+                    </select>
+                  </label>
+                </form>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table standings-table">
+                <thead>
+                  <tr>
+                    <th>POS</th>
+                    <th>CLUB</th>
+                    <th>COMPETITION</th>
+                    <th>PL</th>
+                    <th>W</th>
+                    <th>D</th>
+                    <th>L</th>
+                    <th>GF</th>
+                    <th>GA</th>
+                    <th>GD</th>
+                    <th>PTS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="row : ${standings}">
+                    <td>
+                      <span class="rank-badge" th:text="${row.rank}">1</span>
+                    </td>
+                    <td>
+                      <div class="entity-cell">
+                        <span
+                          class="crest crest-small"
+                          th:text="${#strings.substring(row.team, 0, 1)}"
+                          >C</span
+                        ><b th:text="${row.team}">Club</b>
+                      </div>
+                    </td>
+                    <td>
+                      <b th:text="${row.league}">League</b
+                      ><small class="cell-sub" th:text="${row.season}"
+                        >Season</small
+                      >
+                    </td>
+                    <td th:text="${row.played}">0</td>
+                    <td th:text="${row.won}">0</td>
+                    <td th:text="${row.drawn}">0</td>
+                    <td th:text="${row.lost}">0</td>
+                    <td th:text="${row.gf}">0</td>
+                    <td th:text="${row.ga}">0</td>
+                    <td th:text="${row.gd}">0</td>
+                    <td>
+                      <b class="points-cell" th:text="${row.points}">0</b>
+                    </td>
+                  </tr>
+                  <tr th:if="${standings.isEmpty()}">
+                    <td colspan="11" class="empty-row">
+                      No table entries match this league. Create a season and register clubs if the league is new.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <div class="callout">
+            <span class="callout-icon">i</span>
+            <div>
+              <b>Standings are ready for your competition data</b>
+              <p>
+                Match results and player events are stored separately so points
+                can be reconciled against the official match record.
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

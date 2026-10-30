@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/head :: head('Leagues')}"></head>
+  <body>
+    <div class="app-shell">
+      <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb">Management <span>/</span> <b>Leagues</b></div>
+          <div class="top-actions">
+            <span class="date-chip">Competition setup</span>
+            <div class="tiny-avatar">CO</div>
+          </div>
+        </header>
+        <section class="page-wrap">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">COMPETITION STRUCTURE</p>
+              <h1>Leagues & seasons</h1>
+              <p class="subtitle">
+                Set up competitions and their seasons before registering clubs
+                and fixtures.
+              </p>
+            </div>
+            <a class="button button-primary" href="#add-league"
+              >＋ Create league</a
+            >
+          </div>
+          <div class="notice" th:if="${notice}" th:text="${notice}"></div>
+          <section class="league-grid">
+            <article class="league-card" th:each="league : ${leagues}">
+              <div class="league-card-top">
+                <span class="league-emblem">◉</span
+                ><span class="league-tag">LEAGUE</span>
+              </div>
+              <h2 th:text="${league.name}">League name</h2>
+              <p
+                class="league-country"
+                th:text="${league.country != null ? league.country : 'Country not assigned'}"
+              >
+                Country
+              </p>
+              <div class="league-card-stats">
+                <div>
+                  <b th:text="${league.teams}">0</b><small>CLUBS</small>
+                </div>
+                <div>
+                  <b th:text="${league.seasons}">0</b><small>SEASONS</small>
+                </div>
+              </div>
+              <a class="text-link" th:href="@{/teams}"
+                >Manage clubs <span>↗</span></a
+              >
+            </article>
+            <div class="panel empty-league" th:if="${leagues.isEmpty()}">
+              <div class="empty-icon">◉</div>
+              <b>No leagues created</b>
+              <p>Create a league, then add its first season.</p>
+            </div>
+          </section>
+          <section class="panel form-panel" id="add-league">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">NEW COMPETITION</p>
+                <h2>Create a league</h2>
+              </div>
+            </div>
+            <form class="inline-form" method="post" th:action="@{/leagues}">
+              <label
+                >League name<input
+                  name="name"
+                  required
+                  maxlength="120"
+                  placeholder="e.g. Premier League" /></label
+              ><button class="button button-primary" type="submit">
+                Save league
+              </button>
+            </form>
+          </section>
+          <section class="panel form-panel" id="add-season">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">SEASON SETUP</p>
+                <h2>Create a season</h2>
+              </div>
+            </div>
+            <form class="form-grid" method="post" th:action="@{/seasons}">
+              <label
+                >League<select name="leagueId" required>
+                  <option value="" disabled selected>Select league</option>
+                  <option
+                    th:each="league : ${leagues}"
+                    th:value="${league.id}"
+                    th:text="${league.name}"
+                  ></option></select></label
+              ><label
+                >Season label<input
+                  name="label"
+                  required
+                  maxlength="20"
+                  placeholder="e.g. 2026/27" /></label
+              ><label>Start date<input name="startDate" type="date" /></label
+              ><label>End date<input name="endDate" type="date" /></label>
+              <div class="form-actions">
+                <button class="button button-primary" type="submit">
+                  Save season
+                </button>
+              </div>
+            </form>
+          </section>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">SEASON REGISTER</p>
+                <h2>Seasons</h2>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>SEASON</th>
+                    <th>LEAGUE</th>
+                    <th>START</th>
+                    <th>END</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="season : ${seasons}">
+                    <td><b th:text="${season.label}">2026/27</b></td>
+                    <td th:text="${season.league}">League</td>
+                    <td
+                      th:text="${season.startDate != null ? season.startDate : '—'}"
+                    >
+                      —
+                    </td>
+                    <td
+                      th:text="${season.endDate != null ? season.endDate : '—'}"
+                    >
+                      —
+                    </td>
+                  </tr>
+                  <tr th:if="${seasons.isEmpty()}">
+                    <td class="empty-row" colspan="4">
+                      No seasons yet. Create one above.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

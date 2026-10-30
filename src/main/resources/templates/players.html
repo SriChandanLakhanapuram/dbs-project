@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/head :: head('Players')}"></head>
+  <body>
+    <div class="app-shell">
+      <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb">Management <span>/</span> <b>Players</b></div>
+        </header>
+        <section class="page-wrap">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">SQUAD DIRECTORY</p>
+              <h1>Players</h1>
+              <p class="subtitle">
+                Keep player profiles and club affiliations in one place.
+              </p>
+            </div>
+            <a class="button button-primary" href="#add-player"
+              >＋ Add player</a
+            >
+          </div>
+          <div class="notice" th:if="${notice}" th:text="${notice}"></div>
+          <section class="panel form-panel" id="add-player">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">NEW PROFILE</p>
+                <h2>Add a player</h2>
+              </div>
+            </div>
+            <form class="form-grid" method="post" th:action="@{/players}">
+              <label
+                >Full name<input
+                  name="name"
+                  required
+                  maxlength="120"
+                  placeholder="e.g. Jordan Ellis" /></label
+              ><label
+                >Club<select name="teamId">
+                  <option value="">Unattached</option>
+                  <option
+                    th:each="team : ${teams}"
+                    th:value="${team.id}"
+                    th:text="${team.name}"
+                  ></option></select></label
+              ><label
+                >Position<input
+                  name="position"
+                  maxlength="40"
+                  placeholder="e.g. Midfielder" /></label
+              ><label
+                >Nationality<input
+                  name="nationality"
+                  maxlength="80"
+                  placeholder="e.g. England" /></label
+              ><label
+                >Shirt number<input
+                  name="jerseyNo"
+                  type="number"
+                  min="1"
+                  max="999"
+                  placeholder="e.g. 10"
+              /></label>
+              <div class="form-actions">
+                <button class="button button-primary" type="submit">
+                  Save player
+                </button>
+              </div>
+            </form>
+          </section>
+          <section class="panel directory-filters">
+            <div class="panel-heading">
+              <div><p class="eyebrow">SQUAD SEARCH</p><h2>Filter players</h2></div>
+              <a class="text-link" th:href="@{/players}">Clear filters</a>
+            </div>
+            <form class="filter-form" method="get" th:action="@{/players}">
+              <label>League
+                <select name="leagueId" data-filter-league>
+                  <option value="">All leagues</option>
+                  <option th:each="league : ${leagues}" th:value="${league.id}"
+                          th:selected="${filterLeagueId != null and #strings.toString(filterLeagueId) == #strings.toString(league.id)}"
+                          th:text="${league.name}">League</option>
+                </select>
+              </label>
+              <label>Club
+                <select name="teamId" data-filter-team>
+                  <option value="">All clubs</option>
+                  <option th:each="team : ${teams}" th:value="${team.id}"
+                          th:attr="data-league-id=${team.leagueId}"
+                          th:selected="${filterTeamId != null and #strings.toString(filterTeamId) == #strings.toString(team.id)}"
+                          th:text="${team.name}">Club</option>
+                </select>
+              </label>
+              <label>Nationality
+                <select name="nationality">
+                  <option value="">All nationalities</option>
+                  <option th:each="item : ${nationalities}" th:value="${item}"
+                          th:selected="${filterNationality == item}" th:text="${item}">Nationality</option>
+                </select>
+              </label>
+              <label>Position
+                <select name="position">
+                  <option value="">All positions</option>
+                  <option th:each="item : ${positions}" th:value="${item}"
+                          th:selected="${filterPosition == item}" th:text="${item}">Position</option>
+                </select>
+              </label>
+              <button class="button button-secondary" type="submit">Apply filters</button>
+            </form>
+          </section>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">PLAYER REGISTER</p>
+                <h2 th:text="${players.size()} + ' players'">0 players</h2>
+              </div>
+              <span class="table-hint">Filtered squad directory</span>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>PLAYER</th>
+                    <th>CLUB</th>
+                    <th>POSITION</th>
+                    <th>NATIONALITY</th>
+                    <th>SHIRT</th>
+                    <th>GOALS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="player : ${players}">
+                    <td>
+                      <div class="entity-cell">
+                        <span
+                          class="player-avatar"
+                          th:text="${#strings.substring(player.name, 0, 1)}"
+                          >P</span
+                        ><b th:text="${player.name}">Player</b>
+                      </div>
+                    </td>
+                    <td
+                      th:text="${player.team != null ? player.team : 'Unattached'}"
+                    >
+                      Club
+                    </td>
+                    <td>
+                      <span
+                        class="position-pill"
+                        th:text="${player.position != null ? player.position : '—'}"
+                        >Midfielder</span
+                      >
+                    </td>
+                    <td
+                      th:text="${player.nationality != null ? player.nationality : '—'}"
+                    >
+                      Country
+                    </td>
+                    <td
+                      th:text="${player.number != null ? '#' + player.number : '—'}"
+                    >
+                      #10
+                    </td>
+                    <td><b class="points-cell" th:text="${player['goals'] != null ? player['goals'] : 0}">0</b></td>
+                  </tr>
+                  <tr th:if="${players.isEmpty()}">
+                    <td colspan="6" class="empty-row">
+                      No players match these filters. Clear filters or add a player below.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

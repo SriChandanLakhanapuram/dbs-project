@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/head :: head('Transfers')}"></head>
+  <body>
+    <div class="app-shell">
+      <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb">
+            Management <span>/</span> <b>Transfers</b>
+          </div>
+          <div class="top-actions">
+            <span class="date-chip">Player movement</span>
+            <div class="tiny-avatar">CO</div>
+          </div>
+        </header>
+        <section class="page-wrap">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">TRANSFER REGISTER</p>
+              <h1>Transfers</h1>
+              <p class="subtitle">
+                Track player movement between clubs and keep squad affiliations
+                current.
+              </p>
+            </div>
+            <a class="button button-primary" href="#record-transfer"
+              >＋ Record transfer</a
+            >
+          </div>
+          <div class="notice" th:if="${notice}" th:text="${notice}"></div>
+          <div class="error-notice" th:if="${error}" th:text="${error}"></div>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">MOVEMENT HISTORY</p>
+                <h2 th:text="${transfers.size()} + ' transfers'">
+                  0 transfers
+                </h2>
+              </div>
+              <span class="table-hint">Newest first</span>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>PLAYER</th>
+                    <th>FROM</th>
+                    <th>TO</th>
+                    <th>SEASON</th>
+                    <th>FEE</th>
+                    <th>DATE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="transfer : ${transfers}">
+                    <td><b th:text="${transfer.player}">Player</b></td>
+                    <td
+                      th:text="${transfer.fromTeam != null ? transfer.fromTeam : 'Free agent'}"
+                    >
+                      From
+                    </td>
+                    <td th:text="${transfer.toTeam}">To</td>
+                    <td
+                      th:text="${transfer.season != null ? transfer.season : '—'}"
+                    >
+                      Season
+                    </td>
+                    <td
+                      th:text="${transfer.fee != null ? #numbers.formatDecimal(transfer.fee, 1, 'COMMA', 2, 'POINT') : '—'}"
+                    >
+                      0
+                    </td>
+                    <td
+                      th:text="${#temporals.format(transfer.transferDate.toLocalDateTime(), 'd MMM yyyy')}"
+                    >
+                      Date
+                    </td>
+                  </tr>
+                  <tr th:if="${transfers.isEmpty()}">
+                    <td colspan="6" class="empty-row">
+                      No transfers recorded yet.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel form-panel" id="record-transfer">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">NEW MOVEMENT</p>
+                <h2>Record a transfer</h2>
+              </div>
+            </div>
+            <form class="form-grid" method="post" th:action="@{/transfers}">
+              <label>Season · destination league
+                <select id="transferSeason" name="seasonId" required data-season-select>
+                  <option value="" disabled selected>Select season</option>
+                  <option th:each="season : ${seasons}" th:value="${season.id}"
+                          th:attr="data-league-id=${season.leagueId}" th:text="${season.name}">League · Season</option>
+                </select>
+              </label>
+              <label>Player
+                <select id="transferPlayer" name="playerId" required data-player-select>
+                  <option value="" disabled selected>Select player</option>
+                  <option th:each="player : ${players}" th:value="${player.id}"
+                          th:attr="data-current-team-id=${player.teamId}" th:text="${player.name}">Player</option>
+                </select>
+              </label>
+              <label>From league · optional filter
+                <select id="fromLeagueFilter" data-from-league-filter>
+                  <option value="">Any league / outside competition</option>
+                  <option th:each="league : ${leagues}" th:value="${league.id}" th:text="${league.name}">League</option>
+                </select>
+              </label>
+              <label>From club
+                <select id="fromTeamId" name="fromTeamId" data-from-team-select>
+                  <option value="">Free agent / outside league</option>
+                  <option th:each="team : ${teams}" th:value="${team.id}"
+                          th:attr="data-league-id=${team.leagueId}" th:text="${team.name}">Club</option>
+                </select>
+              </label>
+              <label>To club · selected season's league
+                <select id="toTeamId" name="toTeamId" required data-to-team-select disabled>
+                  <option value="" disabled selected>Select a season first</option>
+                  <option th:each="team : ${teams}" th:value="${team.id}"
+                          th:attr="data-league-id=${team.leagueId}" th:text="${team.name}">Club</option>
+                </select>
+              </label>
+              <label>Transfer date<input name="transferDate" type="date" required /></label>
+              <label>Fee<input name="fee" type="number" min="0" step="0.01" value="0.00" /></label>
+              <div class="form-actions">
+                <button class="button button-primary" type="submit">
+                  Save transfer
+                </button>
+              </div>
+            </form>
+            <p class="form-help transfer-help">
+              The player's registered club is recorded as the source. Selecting a player fills the From club; the season limits destination clubs to its league.
+            </p>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

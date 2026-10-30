@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/head :: head('Match reports')}"></head>
+  <body>
+    <div class="app-shell">
+      <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb">
+            Management <span>/</span> <b>Match reports</b>
+          </div>
+          <div class="top-actions">
+            <span class="date-chip">Match events</span>
+            <div class="tiny-avatar">CO</div>
+          </div>
+        </header>
+        <section class="page-wrap">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">OFFICIAL RECORD</p>
+              <h1>Match reports</h1>
+              <p class="subtitle">
+                Record goals, discipline, and substitutions for each fixture.
+              </p>
+            </div>
+          </div>
+          <div class="notice" th:if="${notice}" th:text="${notice}"></div>
+          <div class="error-notice" th:if="${error}" th:text="${error}"></div>
+          <section class="panel match-context-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">REPORT CONTEXT</p>
+                <h2>Choose a match once</h2>
+              </div>
+              <span class="table-hint">All events below will be recorded against it</span>
+            </div>
+            <form class="inline-form match-status-filter" method="get" th:action="@{/reports}" data-submit-on-change>
+              <label>Match status
+                <select name="tab">
+                  <option value="upcoming" th:selected="${currentTab == 'upcoming'}">Upcoming</option>
+                  <option value="completed" th:selected="${currentTab == 'completed'}">Completed</option>
+                </select>
+              </label>
+            </form>
+            <form class="inline-form match-picker" method="get" th:action="@{/reports}" data-submit-on-change>
+              <input type="hidden" name="tab" th:value="${currentTab}" />
+              <label>Match
+                <select name="matchId" required>
+                  <option value="" disabled th:selected="${selectedMatch == null}">Select a fixture</option>
+                  <option th:each="match : ${matches}" th:value="${match.id}"
+                          th:selected="${selectedMatch != null and match.id == selectedMatch.id}"
+                          th:text="${match.name}">Match</option>
+                </select>
+              </label>
+              <noscript><button class="button button-primary" type="submit">Load match</button></noscript>
+            </form>
+            <div class="selected-match" th:if="${selectedMatch != null}">
+              <div class="selected-match-teams">
+                <b th:text="${selectedMatch.home}">Home club</b>
+                <span>vs</span>
+                <b th:text="${selectedMatch.away}">Away club</b>
+              </div>
+              <div class="selected-match-meta">
+                <span th:text="${selectedMatch.date}">Match date</span>
+                <span class="status-pill" th:text="${selectedMatch.status}">Scheduled</span>
+              </div>
+            </div>
+            <p class="form-help" th:if="${selectedMatch == null and param.matchId == null}">
+              Select a fixture to load its clubs and eligible players for every event form.
+            </p>
+            <p class="empty-compact" th:if="${matches.isEmpty()}">
+              No fixtures are available yet. Schedule one on the Fixtures &amp; results page first.
+            </p>
+          </section>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">MATCH EVENTS</p>
+                <h2>Latest goal contributions</h2>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>PLAYER</th>
+                    <th>CLUB</th>
+                    <th>FIXTURE</th>
+                    <th>MIN</th>
+                    <th>DATE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="goal : ${scorers}">
+                    <td><b th:text="${goal.player}">Player</b></td>
+                    <td th:text="${goal.team}">Club</td>
+                    <td>
+                      <span th:text="${goal.home}">Home</span> –
+                      <span th:text="${goal.away}">Away</span>
+                    </td>
+                    <td th:text="${goal.minute} + '’'">12’</td>
+                    <td
+                      th:text="${#temporals.format(goal.matchDate.toLocalDateTime(), 'd MMM yyyy')}"
+                    >
+                      Date
+                    </td>
+                  </tr>
+                  <tr th:if="${scorers.isEmpty()}">
+                    <td colspan="5" class="empty-row">
+                      No goals recorded. Match events added below will show
+                      here.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">DISCIPLINARY REGISTER</p>
+                <h2>Latest cards</h2>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>PLAYER</th>
+                    <th>CLUB</th>
+                    <th>CARD</th>
+                    <th>MINUTE</th>
+                    <th>MATCH DATE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="card : ${cards}">
+                    <td><b th:text="${card.player}">Player</b></td>
+                    <td th:text="${card.team}">Club</td>
+                    <td>
+                      <span class="position-pill" th:text="${card.type}"
+                        >Yellow</span
+                      >
+                    </td>
+                    <td th:text="${card.minute} + '’'">12’</td>
+                    <td
+                      th:text="${#temporals.format(card.matchDate.toLocalDateTime(), 'd MMM yyyy')}"
+                    >
+                      Date
+                    </td>
+                  </tr>
+                  <tr th:if="${cards.isEmpty()}">
+                    <td colspan="5" class="empty-row">
+                      No cards recorded yet.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section class="panel form-panel" id="add-event" th:if="${selectedMatch != null}">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">NEW EVENTS</p>
+                <h2>Events for this match</h2>
+              </div>
+            </div>
+            <div class="event-forms">
+              <form
+                class="event-form"
+                method="post"
+                th:action="@{/reports/goal}"
+              >
+                <input type="hidden" name="tab" th:value="${currentTab}" />
+                <input type="hidden" name="matchId" th:value="${selectedMatch != null ? selectedMatch.id : (param.matchId != null ? param.matchId[0] : '')}" />
+                <h3>Goal</h3>
+                <label
+                  >Scoring club<select name="teamId" required data-filter-players="goal-player">
+                    <option value="" disabled selected>Select club</option>
+                    <option
+                      th:each="team : ${matchTeams != null and !matchTeams.isEmpty() ? matchTeams : teams}"
+                      th:value="${team.id}"
+                      th:text="${team.name}"
+                    ></option></select></label
+                ><label
+                  >Player<select name="playerId" required>
+                    <option value="" disabled selected>Select player</option>
+                    <option
+                      th:each="player : ${players}"
+                      th:value="${player.id}"
+                      th:attr="data-team-id=${player.teamId}"
+                      th:text="${player.name}"
+                    ></option></select></label
+                ><label
+                  >Minute<input
+                    name="minute"
+                    type="number"
+                    min="1"
+                    max="130"
+                    required /></label
+                ><button class="button button-primary" type="submit">
+                  Save goal
+                </button>
+              </form>
+              <form
+                class="event-form"
+                method="post"
+                th:action="@{/reports/card}"
+              >
+                <input type="hidden" name="tab" th:value="${currentTab}" />
+                <input type="hidden" name="matchId" th:value="${selectedMatch != null ? selectedMatch.id : (param.matchId != null ? param.matchId[0] : '')}" />
+                <h3>Card</h3>
+                <label
+                  >Player<select name="playerId" required>
+                    <option value="" disabled selected>Select player</option>
+                    <option
+                      th:each="player : ${players}"
+                      th:value="${player.id}"
+                      th:attr="data-team-id=${player.teamId}"
+                      th:text="${player.name}"
+                    ></option></select></label
+                ><label
+                  >Card type<select name="cardType">
+                    <option>Yellow</option>
+                    <option>Red</option>
+                  </select></label
+                ><label
+                  >Minute<input
+                    name="minute"
+                    type="number"
+                    min="1"
+                    max="130"
+                    required /></label
+                ><button class="button button-secondary" type="submit">
+                  Save card
+                </button>
+              </form>
+              <form
+                class="event-form"
+                method="post"
+                th:action="@{/reports/substitution}"
+              >
+                <input type="hidden" name="tab" th:value="${currentTab}" />
+                <input type="hidden" name="matchId" th:value="${selectedMatch != null ? selectedMatch.id : (param.matchId != null ? param.matchId[0] : '')}" />
+                <h3>Substitution</h3>
+                <label
+                  >Club<select name="sub-team" required data-filter-players="sub-player">
+                    <option value="" disabled selected>Select club</option>
+                    <option
+                      th:each="team : ${matchTeams != null and !matchTeams.isEmpty() ? matchTeams : teams}"
+                      th:value="${team.id}"
+                      th:text="${team.name}"
+                    ></option></select></label
+                ><label
+                  >Player off<select name="playerOutId" required>
+                    <option value="" disabled selected>Select player</option>
+                    <option
+                      th:each="player : ${players}"
+                      th:value="${player.id}"
+                      th:attr="data-team-id=${player.teamId}"
+                      th:text="${player.name}"
+                    ></option></select></label
+                ><label
+                  >Player on<select name="playerInId" required>
+                    <option value="" disabled selected>Select player</option>
+                    <option
+                      th:each="player : ${players}"
+                      th:value="${player.id}"
+                      th:attr="data-team-id=${player.teamId}"
+                      th:text="${player.name}"
+                    ></option></select></label
+                ><label
+                  >Minute<input
+                    name="minute"
+                    type="number"
+                    min="1"
+                    max="130"
+                    required /></label
+                ><button class="button button-secondary" type="submit">
+                  Save substitution
+                </button>
+              </form>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

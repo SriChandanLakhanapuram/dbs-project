@@ -1,0 +1,52 @@
+<aside class="sidebar" th:fragment="sidebar">
+  <a class="brand" th:href="@{/}"
+    ><span class="brand-mark">T</span
+    ><span>touchline<small>LEAGUE OFFICE</small></span></a
+  >
+  <p class="nav-label">MANAGEMENT</p>
+  <nav class="nav-list">
+    <a th:href="@{/}" th:classappend="${page == 'dashboard'} ? 'active'"
+      ><span class="nav-icon">▦</span>Overview</a
+    >
+    <a th:href="@{/leagues}" th:classappend="${page == 'leagues'} ? 'active'"
+      ><span class="nav-icon">◉</span>Leagues</a
+    >
+    <a th:href="@{/teams}" th:classappend="${page == 'teams'} ? 'active'"
+      ><span class="nav-icon">⚑</span>Clubs</a
+    >
+    <a th:href="@{/players}" th:classappend="${page == 'players'} ? 'active'"
+      ><span class="nav-icon">♙</span>Players</a
+    >
+    <details class="nav-dropdown" th:open="${page == 'matches'}">
+      <summary th:classappend="${page == 'matches'} ? ' active' : ''">
+        <span class="nav-icon">◷</span>Fixtures & results<span class="nav-chevron" aria-hidden="true"></span>
+      </summary>
+      <div class="nav-sublist">
+        <a th:href="@{/matches(tab='upcoming',leagueId=${selectedLeagueId})}"
+           th:classappend="${currentTab == 'upcoming' ? 'active' : ''}">Upcoming</a>
+        <a th:href="@{/matches(tab='completed',leagueId=${selectedLeagueId})}"
+           th:classappend="${currentTab == 'completed' ? 'active' : ''}">Completed</a>
+      </div>
+    </details>
+    <a th:href="@{/reports}" th:classappend="${page == 'reports'} ? 'active'"
+      ><span class="nav-icon">✦</span>Match reports</a
+    >
+    <a
+      th:href="@{/transfers}"
+      th:classappend="${page == 'transfers'} ? 'active'"
+      ><span class="nav-icon">⇄</span>Transfers</a
+    >
+    <a
+      th:href="@{/standings}"
+      th:classappend="${page == 'standings'} ? 'active'"
+      ><span class="nav-icon">↕</span>Standings</a
+    >
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="user-avatar">CO</div>
+    <div class="user-info">
+      Competition admin<small>League administrator</small>
+    </div>
+    <span class="more">···</span>
+  </div>
+</aside>
