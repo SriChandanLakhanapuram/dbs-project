@@ -17,6 +17,12 @@
     <a th:href="@{/players}" th:classappend="${page == 'players'} ? 'active'"
       ><span class="nav-icon">♙</span>Players</a
     >
+    <a th:href="@{/coaches}" th:classappend="${page == 'coaches'} ? 'active'"
+      ><span class="nav-icon">♧</span>Coaches</a
+    >
+    <a th:href="@{/referees}" th:classappend="${page == 'referees'} ? 'active'"
+      ><span class="nav-icon">⚑</span>Referees</a
+    >
     <details class="nav-dropdown" th:open="${page == 'matches'}">
       <summary th:classappend="${page == 'matches'} ? ' active' : ''">
         <span class="nav-icon">◷</span>Fixtures & results<span class="nav-chevron" aria-hidden="true"></span>

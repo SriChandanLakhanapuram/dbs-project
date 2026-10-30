@@ -1,35 +1,46 @@
 package com.footballmanager.touchline;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.sql.PreparedStatement;
+import java.sql.Timestamp;
+
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-
 @Service
 public class FootballService {
+
     private final JdbcTemplate jdbc;
 
     public record LeagueRace(String league, String season, List<Map<String, Object>> rows) {}
 
-    public FootballService(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    public FootballService(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
+    }
 
     public int count(String table) {
-        // Only fixed table names controlled by this class are passed here.
         return jdbc.queryForObject("SELECT COUNT(*) FROM " + table, Integer.class);
     }
 
-    public List<Map<String, Object>> teams() { return teams(null); }
+    public List<Map<String, Object>> teams() {
+        return teams(null);
+    }
 
     public List<Map<String, Object>> teams(Long leagueId) {
         String sql = """
             SELECT t.team_id AS \"id\", t.name AS \"name\", t.league_id AS \"leagueId\", l.name AS \"league\",
                    s.name AS \"stadium\", t.founded_year AS \"founded\",
-                   (SELECT COUNT(*) FROM players p WHERE p.team_id = t.team_id) AS \"players\"
+                   (SELECT COUNT(*) FROM players p WHERE p.team_id = t.team_id) AS \"players\",
+                   (SELECT LISTAGG(c.name, ', ') WITHIN GROUP (ORDER BY c.name)
+                    FROM coaches c WHERE c.team_id=t.team_id) AS \"coaches\"
             FROM teams t LEFT JOIN leagues l ON l.league_id=t.league_id
             LEFT JOIN stadiums s ON s.stadium_id=t.stadium_id
             """ + (leagueId == null ? "" : " WHERE t.league_id=?") + " ORDER BY t.name";
@@ -46,22 +57,42 @@ public class FootballService {
             LEFT JOIN leagues l ON l.league_id=t.league_id WHERE 1=1
             """);
         List<Object> params = new ArrayList<>();
-        if (teamId != null) { sql.append(" AND p.team_id=?"); params.add(teamId); }
-        if (leagueId != null) { sql.append(" AND t.league_id=?"); params.add(leagueId); }
-        if (nationality != null && !nationality.isBlank()) { sql.append(" AND p.nationality=?"); params.add(nationality); }
-        if (position != null && !position.isBlank()) { sql.append(" AND p.position=?"); params.add(position); }
+        if (teamId != null) {
+            sql.append(" AND p.team_id=?");
+            params.add(teamId);
+        }
+        if (leagueId != null) {
+            sql.append(" AND t.league_id=?");
+            params.add(leagueId);
+        }
+        if (nationality != null && !nationality.isBlank()) {
+            sql.append(" AND p.nationality=?");
+            params.add(nationality);
+        }
+        if (position != null && !position.isBlank()) {
+            sql.append(" AND p.position=?");
+            params.add(position);
+        }
         sql.append(" ORDER BY p.name");
         return jdbc.queryForList(sql.toString(), params.toArray());
     }
 
-    public List<String> playerNationalities() { return jdbc.queryForList("SELECT DISTINCT nationality FROM players WHERE nationality IS NOT NULL ORDER BY nationality", String.class); }
-    public List<String> playerPositions() { return jdbc.queryForList("SELECT DISTINCT position FROM players WHERE position IS NOT NULL ORDER BY position", String.class); }
+    public List<String> playerNationalities() {
+        return jdbc.queryForList("SELECT DISTINCT nationality FROM players WHERE nationality IS NOT NULL ORDER BY nationality", String.class);
+    }
+
+    public List<String> playerPositions() {
+        return jdbc.queryForList("SELECT DISTINCT position FROM players WHERE position IS NOT NULL ORDER BY position", String.class);
+    }
 
     public List<Map<String, Object>> matches() {
         return jdbc.queryForList("""
             SELECT m.match_id AS \"id\", m.match_date AS \"matchDate\", m.status AS \"status\",
                    m.home_goals AS \"homeGoals\", m.away_goals AS \"awayGoals\",
-                   h.name AS \"home\", a.name AS \"away\", l.name AS \"league\", se.label AS \"season\"
+                   h.name AS \"home\", a.name AS \"away\", l.name AS \"league\", se.label AS \"season\",
+                   (SELECT LISTAGG(r.name, ', ') WITHIN GROUP (ORDER BY r.name)
+                    FROM match_refs mr JOIN referees r ON r.referee_id=mr.referee_id
+                    WHERE mr.match_id=m.match_id) AS \"referees\"
             FROM matches m JOIN teams h ON h.team_id=m.home_team_id
             JOIN teams a ON a.team_id=m.away_team_id JOIN seasons se ON se.season_id=m.season_id
             JOIN leagues l ON l.league_id=se.league_id ORDER BY m.match_date DESC
@@ -73,7 +104,10 @@ public class FootballService {
             SELECT m.match_id AS "id", m.match_date AS "matchDate", m.status AS "status",
                    m.home_goals AS "homeGoals", m.away_goals AS "awayGoals",
                    h.name AS "home", a.name AS "away", l.name AS "league", l.league_id AS "leagueId",
-                   se.label AS "season"
+                   se.label AS "season",
+                   (SELECT LISTAGG(r.name, ', ') WITHIN GROUP (ORDER BY r.name)
+                    FROM match_refs mr JOIN referees r ON r.referee_id=mr.referee_id
+                    WHERE mr.match_id=m.match_id) AS "referees"
             FROM matches m JOIN teams h ON h.team_id=m.home_team_id
             JOIN teams a ON a.team_id=m.away_team_id JOIN seasons se ON se.season_id=m.season_id
             JOIN leagues l ON l.league_id=se.league_id
@@ -81,7 +115,10 @@ public class FootballService {
             """);
         sql.append(completed ? "m.status='Completed'" : "NVL(m.status,'Scheduled')<>'Completed'");
         List<Object> params = new ArrayList<>();
-        if (leagueId != null) { sql.append(" AND l.league_id=?"); params.add(leagueId); }
+        if (leagueId != null) {
+            sql.append(" AND l.league_id=?");
+            params.add(leagueId);
+        }
         sql.append(completed ? " ORDER BY m.match_date DESC" : " ORDER BY m.match_date ASC");
         return jdbc.queryForList(sql.toString(), params.toArray());
     }
@@ -100,8 +137,8 @@ public class FootballService {
                    st.points AS "points", se.label AS "season", l.name AS "league"
             FROM standings st JOIN teams t ON t.team_id=st.team_id
             JOIN seasons se ON se.season_id=st.season_id JOIN leagues l ON l.league_id=se.league_id
-            """ + (leagueId == null ? "" : " WHERE l.league_id=?") +
-            " ORDER BY se.season_id DESC, st.points DESC, (st.goals_for-st.goals_against) DESC";
+            """ + (leagueId == null ? "" : " WHERE l.league_id=?")
+                + " ORDER BY se.season_id DESC, st.points DESC, (st.goals_for-st.goals_against) DESC";
         return leagueId == null ? jdbc.queryForList(sql) : jdbc.queryForList(sql, leagueId);
     }
 
@@ -114,28 +151,117 @@ public class FootballService {
             """);
     }
 
-    public List<Map<String, Object>> teamOptions() { return jdbc.queryForList("SELECT t.team_id AS \"id\", t.name AS \"name\", t.league_id AS \"leagueId\", l.name AS \"league\" FROM teams t LEFT JOIN leagues l ON l.league_id=t.league_id ORDER BY l.name,t.name"); }
-    public List<Map<String, Object>> playerOptions() { return jdbc.queryForList("SELECT player_id AS \"id\", name AS \"name\", team_id AS \"teamId\" FROM players ORDER BY name"); }
+    public List<Map<String, Object>> teamOptions() {
+        return jdbc.queryForList("SELECT t.team_id AS \"id\", t.name AS \"name\", t.league_id AS \"leagueId\", l.name AS \"league\" FROM teams t LEFT JOIN leagues l ON l.league_id=t.league_id ORDER BY l.name,t.name");
+    }
+
+    public List<Map<String, Object>> refereeOptions() {
+        return jdbc.queryForList("SELECT referee_id AS \"id\", name AS \"name\", nationality AS \"nationality\" FROM referees ORDER BY name");
+    }
+
+    public List<String> refereeNationalities() {
+        return jdbc.queryForList("SELECT DISTINCT nationality FROM referees WHERE nationality IS NOT NULL ORDER BY nationality", String.class);
+    }
+
+    public List<Map<String, Object>> referees(Long leagueId, String nationality, String sort) {
+        StringBuilder sql = new StringBuilder("""
+            SELECT r.referee_id AS "id", r.name AS "name", r.nationality AS "nationality",
+                   COUNT(DISTINCT mr.match_id) AS "matches",
+                   LISTAGG(DISTINCT l.name, ', ') WITHIN GROUP (ORDER BY l.name) AS "leagues"
+            FROM referees r
+            LEFT JOIN match_refs mr ON mr.referee_id=r.referee_id
+            LEFT JOIN matches m ON m.match_id=mr.match_id
+            LEFT JOIN seasons se ON se.season_id=m.season_id
+            LEFT JOIN leagues l ON l.league_id=se.league_id
+            WHERE 1=1
+            """);
+        List<Object> params = new ArrayList<>();
+        if (leagueId != null) {
+            sql.append(" AND se.league_id=?");
+            params.add(leagueId);
+        }
+        if (nationality != null && !nationality.isBlank()) {
+            sql.append(" AND r.nationality=?");
+            params.add(nationality);
+        }
+        sql.append(" GROUP BY r.referee_id, r.name, r.nationality");
+        String orderBy = switch (sort == null ? "name" : sort) {
+            case "matches" -> "\"matches\" DESC, r.name";
+            case "nationality" -> "r.nationality, r.name";
+            case "league" -> "\"leagues\", r.name";
+            default -> "r.name";
+        };
+        sql.append(" ORDER BY ").append(orderBy);
+        return jdbc.queryForList(sql.toString(), params.toArray());
+    }
+
+    public void addReferee(String name, String nationality) {
+        jdbc.update("INSERT INTO referees(name, nationality) VALUES (?, ?)", name, nationality);
+    }
+
+    public List<String> coachNationalities() {
+        return jdbc.queryForList("SELECT DISTINCT nationality FROM coaches WHERE nationality IS NOT NULL ORDER BY nationality", String.class);
+    }
+
+    public List<Map<String, Object>> coaches(Long leagueId, String nationality, String sort) {
+        StringBuilder sql = new StringBuilder("""
+            SELECT c.coach_id AS "id", c.name AS "name", c.nationality AS "nationality",
+                   t.name AS "team", l.name AS "league", t.team_id AS "teamId"
+            FROM coaches c LEFT JOIN teams t ON t.team_id=c.team_id
+            LEFT JOIN leagues l ON l.league_id=t.league_id WHERE 1=1
+            """);
+        List<Object> params = new ArrayList<>();
+        if (leagueId != null) { sql.append(" AND t.league_id=?"); params.add(leagueId); }
+        if (nationality != null && !nationality.isBlank()) { sql.append(" AND c.nationality=?"); params.add(nationality); }
+        String orderBy = switch (sort == null ? "name" : sort) {
+            case "nationality" -> "c.nationality, c.name";
+            case "league" -> "l.name, t.name, c.name";
+            case "club" -> "t.name, c.name";
+            default -> "c.name";
+        };
+        sql.append(" ORDER BY ").append(orderBy);
+        return jdbc.queryForList(sql.toString(), params.toArray());
+    }
+
+    public void addCoach(String name, String nationality, Long teamId) {
+        jdbc.update("INSERT INTO coaches(name, nationality, team_id) VALUES (?, ?, ?)", name, nationality, teamId);
+    }
+
+    public List<Map<String, Object>> playerOptions() {
+        return jdbc.queryForList("SELECT player_id AS \"id\", name AS \"name\", team_id AS \"teamId\" FROM players ORDER BY name");
+    }
+
     public List<Map<String, Object>> matchOptions(boolean completed) {
         String statusFilter = completed ? "m.status='Completed'" : "NVL(m.status,'Scheduled')<>'Completed'";
         String order = completed ? "DESC" : "ASC";
         return jdbc.queryForList("SELECT m.match_id AS \"id\", TO_CHAR(m.match_date, 'DD Mon YYYY') || ' · ' || h.name || ' vs ' || a.name AS \"name\", h.team_id AS \"homeTeamId\", a.team_id AS \"awayTeamId\" FROM matches m JOIN teams h ON h.team_id=m.home_team_id JOIN teams a ON a.team_id=m.away_team_id WHERE " + statusFilter + " ORDER BY m.match_date " + order + ", m.match_id " + order);
     }
+
     public Map<String, Object> matchReportContext(long matchId) {
         List<Map<String, Object>> rows = jdbc.queryForList("SELECT m.match_id AS \"id\", m.status AS \"status\", TO_CHAR(m.match_date, 'DD Mon YYYY HH24:MI') AS \"date\", h.team_id AS \"homeTeamId\", h.name AS \"home\", a.team_id AS \"awayTeamId\", a.name AS \"away\" FROM matches m JOIN teams h ON h.team_id=m.home_team_id JOIN teams a ON a.team_id=m.away_team_id WHERE m.match_id=?", matchId);
         return rows.isEmpty() ? null : rows.get(0);
     }
+
     public List<Map<String, Object>> playersForMatch(long matchId) {
         return jdbc.queryForList("SELECT p.player_id AS \"id\", p.name AS \"name\", p.team_id AS \"teamId\", t.name AS \"team\" FROM players p JOIN teams t ON t.team_id=p.team_id WHERE p.team_id IN (SELECT home_team_id FROM matches WHERE match_id=? UNION SELECT away_team_id FROM matches WHERE match_id=?) ORDER BY t.name,p.name", matchId, matchId);
     }
+
     public List<Map<String, Object>> teamsForMatch(long matchId) {
         return jdbc.queryForList("SELECT t.team_id AS \"id\", t.name AS \"name\" FROM teams t WHERE t.team_id IN (SELECT home_team_id FROM matches WHERE match_id=? UNION SELECT away_team_id FROM matches WHERE match_id=?) ORDER BY t.name", matchId, matchId);
     }
+
     public List<Map<String, Object>> seasonOptions() {
         return jdbc.queryForList("SELECT se.season_id AS \"id\", se.league_id AS \"leagueId\", l.name || ' · ' || se.label AS \"name\" FROM seasons se JOIN leagues l ON l.league_id=se.league_id ORDER BY se.start_date DESC");
     }
-    public List<Map<String, Object>> leagueOptions() { return jdbc.queryForList("SELECT league_id AS \"id\", name AS \"name\" FROM leagues ORDER BY name"); }
-    public List<Map<String, Object>> stadiumOptions() { return jdbc.queryForList("SELECT stadium_id AS \"id\", name AS \"name\" FROM stadiums ORDER BY name"); }
+
+    public List<Map<String, Object>> leagueOptions() {
+        return jdbc.queryForList("SELECT league_id AS \"id\", name AS \"name\" FROM leagues ORDER BY name");
+    }
+
+    public List<Map<String, Object>> stadiumOptions() {
+        return jdbc.queryForList("SELECT stadium_id AS \"id\", name AS \"name\" FROM stadiums ORDER BY name");
+    }
+
     public List<Map<String, Object>> seasons() {
         return jdbc.queryForList("SELECT se.season_id AS \"id\", se.label AS \"label\", l.name AS \"league\", TO_CHAR(se.start_date, 'DD Mon YYYY') AS \"startDate\", TO_CHAR(se.end_date, 'DD Mon YYYY') AS \"endDate\" FROM seasons se JOIN leagues l ON l.league_id=se.league_id ORDER BY se.start_date DESC NULLS LAST");
     }
@@ -174,16 +300,39 @@ public class FootballService {
         jdbc.update("INSERT INTO teams(name, league_id, stadium_id, founded_year) VALUES (?, ?, ?, ?)", name, league, stadium, founded);
         jdbc.update("INSERT INTO standings(season_id, team_id) SELECT season_id, (SELECT team_id FROM teams WHERE name=?) FROM seasons WHERE league_id=?", name, league);
     }
-    public void deleteTeam(long id) { jdbc.update("DELETE FROM teams WHERE team_id=?", id); }
+
+    public void deleteTeam(long id) {
+        jdbc.update("DELETE FROM teams WHERE team_id=?", id);
+    }
 
     public void addPlayer(String name, Long team, String position, String nationality, Integer number) {
         jdbc.update("INSERT INTO players(name, team_id, position, nationality, jersey_no) VALUES (?, ?, ?, ?, ?)", name, team, position, nationality, number);
     }
-    public void deletePlayer(long id) { jdbc.update("DELETE FROM players WHERE player_id=?", id); }
 
-    public void addMatch(long season, long home, long away, long stadium, String date) {
-        jdbc.update("INSERT INTO matches(season_id, home_team_id, away_team_id, stadium_id, match_date) VALUES (?, ?, ?, ?, TO_TIMESTAMP(?, 'YYYY-MM-DD\"T\"HH24:MI'))",
-                season, home, away, stadium, date);
+    public void deletePlayer(long id) {
+        jdbc.update("DELETE FROM players WHERE player_id=?", id);
+    }
+
+    @Transactional
+    public void addMatch(long season, long home, long away, long stadium, String date, Long refereeId) {
+        KeyHolder keys = new GeneratedKeyHolder();
+        PreparedStatementCreator insert = connection -> {
+            PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO matches(season_id, home_team_id, away_team_id, stadium_id, match_date) VALUES (?, ?, ?, ?, ?)",
+                    new String[] {"MATCH_ID"});
+            statement.setLong(1, season);
+            statement.setLong(2, home);
+            statement.setLong(3, away);
+            statement.setLong(4, stadium);
+            String timestamp = date.replace('T', ' ');
+            if (timestamp.length() == 16) timestamp += ":00";
+            statement.setTimestamp(5, Timestamp.valueOf(timestamp));
+            return statement;
+        };
+        jdbc.update(insert, keys);
+        if (refereeId != null) {
+            jdbc.update("INSERT INTO match_refs(match_id, referee_id) VALUES (?, ?)", keys.getKey().longValue(), refereeId);
+        }
     }
 
     public void addLeague(String name) {
@@ -261,28 +410,42 @@ public class FootballService {
 
     private String transferTableName() {
         List<String> tables = jdbc.queryForList(
-            "SELECT table_name FROM user_tables WHERE table_name IN ('TRANSFERS','TRANSFER')",
-            String.class);
-        if (tables.contains("TRANSFERS")) return "transfers";
-        if (tables.contains("TRANSFER")) return "transfer";
+                "SELECT table_name FROM user_tables WHERE table_name IN ('TRANSFERS','TRANSFER')",
+                String.class);
+        if (tables.contains("TRANSFERS")) {
+            return "transfers";
+        }
+        if (tables.contains("TRANSFER")) {
+            return "transfer";
+        }
         throw new IllegalStateException("Oracle table TRANSFER or TRANSFERS was not found for the connected user.");
     }
 
     private String transferDateColumn(String transferTable) {
         List<String> columns = jdbc.queryForList(
-            "SELECT column_name FROM user_tab_columns WHERE table_name=UPPER(?)",
-            String.class, transferTable);
-        if (columns.contains("TRANSFER_DATE")) return "transfer_date";
-        if (columns.contains("DATE")) return "\"DATE\"";
-        if (columns.contains("transfer_date")) return "\"transfer_date\"";
-        if (columns.contains("date")) return "\"date\"";
+                "SELECT column_name FROM user_tab_columns WHERE table_name=UPPER(?)",
+                String.class, transferTable);
+        if (columns.contains("TRANSFER_DATE")) {
+            return "transfer_date";
+        }
+        if (columns.contains("DATE")) {
+            return "\"DATE\"";
+        }
+        if (columns.contains("transfer_date")) {
+            return "\"transfer_date\"";
+        }
+        if (columns.contains("date")) {
+            return "\"date\"";
+        }
         throw new IllegalStateException("The Oracle transfer table needs a DATE or TRANSFER_DATE column.");
     }
 
     @Transactional
     public void addGoal(long matchId, long playerId, long teamId, int minute) {
         int valid = jdbc.queryForObject("SELECT COUNT(*) FROM matches m JOIN players p ON p.player_id=? WHERE m.match_id=? AND p.team_id=? AND (m.home_team_id=? OR m.away_team_id=?)", Integer.class, playerId, matchId, teamId, teamId, teamId);
-        if (valid == 0) throw new IllegalArgumentException("Choose a scorer and club from the selected match.");
+        if (valid == 0) {
+            throw new IllegalArgumentException("Choose a scorer and club from the selected match.");
+        }
         jdbc.update("INSERT INTO scorers(match_id, player_id, team_id, minute) VALUES (?, ?, ?, ?)", matchId, playerId, teamId, minute);
         Map<String, Object> match = jdbc.queryForMap("SELECT season_id AS \"seasonId\", status AS \"status\" FROM matches WHERE match_id=?", matchId);
         jdbc.update("UPDATE matches SET home_goals=home_goals + CASE WHEN home_team_id=? THEN 1 ELSE 0 END, away_goals=away_goals + CASE WHEN away_team_id=? THEN 1 ELSE 0 END, status=CASE WHEN status='Scheduled' THEN 'Live' ELSE status END WHERE match_id=? AND (home_team_id=? OR away_team_id=?)", teamId, teamId, matchId, teamId, teamId);
@@ -290,19 +453,25 @@ public class FootballService {
             recalculateStandings(((Number) match.get("seasonId")).longValue());
         }
     }
+
     public void addCard(long matchId, long playerId, String type, int minute) {
         assertPlayerInMatch(matchId, playerId);
         jdbc.update("INSERT INTO cards(match_id, player_id, card_type, minute) VALUES (?, ?, ?, ?)", matchId, playerId, type, minute);
     }
+
     public void addSubstitution(long matchId, long outId, long inId, int minute) {
         int valid = jdbc.queryForObject("SELECT COUNT(*) FROM matches m JOIN players p1 ON p1.player_id=? JOIN players p2 ON p2.player_id=? WHERE m.match_id=? AND p1.team_id=p2.team_id AND p1.team_id IN (m.home_team_id,m.away_team_id)", Integer.class, outId, inId, matchId);
-        if (valid == 0) throw new IllegalArgumentException("Both players in a substitution must belong to the same club in the selected match.");
+        if (valid == 0) {
+            throw new IllegalArgumentException("Both players in a substitution must belong to the same club in the selected match.");
+        }
         jdbc.update("INSERT INTO substitutions(match_id, player_out_id, player_in_id, minute) VALUES (?, ?, ?, ?)", matchId, outId, inId, minute);
     }
 
     private void assertPlayerInMatch(long matchId, long playerId) {
         int valid = jdbc.queryForObject("SELECT COUNT(*) FROM matches m JOIN players p ON p.player_id=? WHERE m.match_id=? AND p.team_id IN (m.home_team_id,m.away_team_id)", Integer.class, playerId, matchId);
-        if (valid == 0) throw new IllegalArgumentException("Choose a player from one of the selected match clubs.");
+        if (valid == 0) {
+            throw new IllegalArgumentException("Choose a player from one of the selected match clubs.");
+        }
     }
 
     @Transactional

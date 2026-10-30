@@ -41,17 +41,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.querySelectorAll("[data-filter-players]").forEach((teamSelect) => {
     const form = teamSelect.closest("form");
-    const playerSelects = teamSelect.name === "teamId"
-      ? [form?.querySelector('select[name="playerId"]')]
-      : [form?.querySelector('select[name="playerOutId"]'), form?.querySelector('select[name="playerInId"]')];
-    const update = () => playerSelects.forEach((select) => filterPlayers(select, teamSelect.value));
+    const playerSelects =
+      teamSelect.name === "teamId"
+        ? [form?.querySelector('select[name="playerId"]')]
+        : [
+            form?.querySelector('select[name="playerOutId"]'),
+            form?.querySelector('select[name="playerInId"]'),
+          ];
+    const update = () =>
+      playerSelects.forEach((select) =>
+        filterPlayers(select, teamSelect.value),
+      );
     teamSelect.addEventListener("change", update);
     update();
   });
 
   const seasonSelect = document.querySelector("[data-season-select]");
   const destinationSelect = document.querySelector("[data-to-team-select]");
-  const sourceLeagueSelect = document.querySelector("[data-from-league-filter]");
+  const sourceLeagueSelect = document.querySelector(
+    "[data-from-league-filter]",
+  );
   const sourceTeamSelect = document.querySelector("[data-from-team-select]");
   const transferPlayerSelect = document.querySelector("[data-player-select]");
 
@@ -82,7 +91,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const seasonOption = seasonSelect?.selectedOptions[0];
     const leagueId = seasonOption?.dataset.leagueId;
     const selected = Boolean(seasonSelect?.value);
-    filterTeams(destinationSelect, leagueId, selected && (Boolean(leagueId) || !seasonOption?.dataset.leagueId));
+    filterTeams(
+      destinationSelect,
+      leagueId,
+      selected && (Boolean(leagueId) || !seasonOption?.dataset.leagueId),
+    );
   }
 
   function updateSource() {
@@ -112,7 +125,9 @@ document.addEventListener("DOMContentLoaded", () => {
       sourceTeamSelect.value = "";
       return;
     }
-    const currentTeam = [...sourceTeamSelect.options].find((option) => option.value === currentTeamId);
+    const currentTeam = [...sourceTeamSelect.options].find(
+      (option) => option.value === currentTeamId,
+    );
     if (currentTeam) {
       sourceLeagueSelect.value = currentTeam.dataset.leagueId || "";
       updateSource();

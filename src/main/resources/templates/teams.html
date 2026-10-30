@@ -48,6 +48,7 @@
                     <th>CLUB</th>
                     <th>LEAGUE</th>
                     <th>HOME GROUND</th>
+                    <th>COACH</th>
                     <th>PLAYERS</th>
                     <th>FOUNDED</th>
                   </tr>
@@ -69,6 +70,7 @@
                     <td th:text="${team.stadium != null ? team.stadium : '—'}">
                       Ground
                     </td>
+                    <td th:text="${team['coaches'] != null ? team['coaches'] : 'Not assigned'}">Coach</td>
                     <td>
                       <span class="count-chip" th:text="${team.players}"
                         >0</span
@@ -79,7 +81,7 @@
                     </td>
                   </tr>
                   <tr th:if="${teams.isEmpty()}">
-                    <td colspan="5" class="empty-row">
+                    <td colspan="6" class="empty-row">
                       No clubs yet. Use the form below to register the first
                       one.
                     </td>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/head :: head('Referees')}"></head>
+  <body>
+    <div class="app-shell">
+      <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+      <main class="main-content">
+        <header class="topbar"><div class="breadcrumb">Management <span>/</span> <b>Referees</b></div></header>
+        <section class="page-wrap">
+          <div class="page-heading">
+            <div><p class="eyebrow">OFFICIALS DIRECTORY</p><h1>Referees</h1>
+              <p class="subtitle">Manage match officials and review the leagues and fixtures they have covered.</p></div>
+            <a class="button button-primary" href="#add-referee">＋ Add referee</a>
+          </div>
+          <div class="notice" th:if="${notice}" th:text="${notice}"></div>
+          <section class="panel directory-filters">
+            <div class="panel-heading"><div><p class="eyebrow">OFFICIALS SEARCH</p><h2>Filter and sort referees</h2></div>
+              <a class="text-link" th:href="@{/referees}">Clear filters</a></div>
+            <form class="filter-form" method="get" th:action="@{/referees}">
+              <label>League<select name="leagueId"><option value="">All leagues</option>
+                <option th:each="league : ${leagues}" th:value="${league.id}"
+                        th:selected="${selectedLeagueId != null and #strings.toString(selectedLeagueId) == #strings.toString(league.id)}"
+                        th:text="${league.name}">League</option></select></label>
+              <label>Nationality<select name="nationality"><option value="">All nationalities</option>
+                <option th:each="item : ${nationalities}" th:value="${item}"
+                        th:selected="${selectedNationality == item}" th:text="${item}">Nationality</option></select></label>
+              <label>Sort by<select name="sort">
+                <option value="name" th:selected="${selectedSort == 'name'}">Name</option>
+                <option value="league" th:selected="${selectedSort == 'league'}">League</option>
+                <option value="nationality" th:selected="${selectedSort == 'nationality'}">Nationality</option>
+                <option value="matches" th:selected="${selectedSort == 'matches'}">Matches officiated</option>
+              </select></label>
+              <button class="button button-secondary" type="submit">Apply</button>
+            </form>
+          </section>
+          <section class="panel">
+            <div class="panel-heading"><div><p class="eyebrow">REFEREE REGISTER</p>
+              <h2 th:text="${referees.size()} + ' referees'">0 referees</h2></div></div>
+            <div class="table-scroll"><table class="data-table">
+              <thead><tr><th>REFEREE</th><th>NATIONALITY</th><th>LEAGUES</th><th>MATCHES</th></tr></thead>
+              <tbody>
+                <tr th:each="referee : ${referees}">
+                  <td><b th:text="${referee.name}">Referee</b></td>
+                  <td th:text="${referee.nationality != null ? referee.nationality : '—'}">Nationality</td>
+                  <td th:text="${referee.leagues != null ? referee.leagues : 'No assignments yet'}">League</td>
+                  <td><span class="count-chip" th:text="${referee.matches}">0</span></td>
+                </tr>
+                <tr th:if="${referees.isEmpty()}"><td colspan="4" class="empty-row">No referees match these filters. Add an official below.</td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section class="panel form-panel" id="add-referee">
+            <div class="panel-heading"><div><p class="eyebrow">NEW OFFICIAL</p><h2>Add a referee</h2></div></div>
+            <form class="form-grid" method="post" th:action="@{/referees}">
+              <label>Name<input name="name" maxlength="120" required placeholder="e.g. Maria Rossi" /></label>
+              <label>Nationality<input name="nationality" maxlength="80" placeholder="e.g. Italy" /></label>
+              <div class="form-actions"><button class="button button-primary" type="submit">Save referee</button></div>
+            </form>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

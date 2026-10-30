@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/head :: head('Coaches')}"></head>
+  <body>
+    <div class="app-shell">
+      <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+      <main class="main-content">
+        <header class="topbar"><div class="breadcrumb">Management <span>/</span> <b>Coaches</b></div></header>
+        <section class="page-wrap">
+          <div class="page-heading">
+            <div><p class="eyebrow">TECHNICAL STAFF</p><h1>Coaches</h1>
+              <p class="subtitle">Register coaches and link them to their current clubs.</p></div>
+            <a class="button button-primary" href="#add-coach">＋ Add coach</a>
+          </div>
+          <div class="notice" th:if="${notice}" th:text="${notice}"></div>
+          <section class="panel directory-filters">
+            <div class="panel-heading"><div><p class="eyebrow">STAFF SEARCH</p><h2>Filter and sort coaches</h2></div>
+              <a class="text-link" th:href="@{/coaches}">Clear filters</a></div>
+            <form class="filter-form" method="get" th:action="@{/coaches}">
+              <label>League<select name="leagueId"><option value="">All leagues</option>
+                <option th:each="league : ${leagues}" th:value="${league.id}"
+                        th:selected="${selectedLeagueId != null and #strings.toString(selectedLeagueId) == #strings.toString(league.id)}"
+                        th:text="${league.name}">League</option></select></label>
+              <label>Nationality<select name="nationality"><option value="">All nationalities</option>
+                <option th:each="item : ${nationalities}" th:value="${item}"
+                        th:selected="${selectedNationality == item}" th:text="${item}">Nationality</option></select></label>
+              <label>Sort by<select name="sort">
+                <option value="name" th:selected="${selectedSort == 'name'}">Name</option>
+                <option value="club" th:selected="${selectedSort == 'club'}">Club</option>
+                <option value="league" th:selected="${selectedSort == 'league'}">League</option>
+                <option value="nationality" th:selected="${selectedSort == 'nationality'}">Nationality</option>
+              </select></label>
+              <button class="button button-secondary" type="submit">Apply</button>
+            </form>
+          </section>
+          <section class="panel">
+            <div class="panel-heading"><div><p class="eyebrow">COACH REGISTER</p>
+              <h2 th:text="${coaches.size()} + ' coaches'">0 coaches</h2></div></div>
+            <div class="table-scroll"><table class="data-table">
+              <thead><tr><th>COACH</th><th>CLUB</th><th>LEAGUE</th><th>NATIONALITY</th></tr></thead>
+              <tbody>
+                <tr th:each="coach : ${coaches}">
+                  <td><b th:text="${coach.name}">Coach</b></td>
+                  <td th:text="${coach.team != null ? coach.team : 'Unassigned'}">Club</td>
+                  <td th:text="${coach.league != null ? coach.league : '—'}">League</td>
+                  <td th:text="${coach.nationality != null ? coach.nationality : '—'}">Nationality</td>
+                </tr>
+                <tr th:if="${coaches.isEmpty()}"><td colspan="4" class="empty-row">No coaches match these filters. Add a coach below.</td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section class="panel form-panel" id="add-coach">
+            <div class="panel-heading"><div><p class="eyebrow">NEW STAFF PROFILE</p><h2>Add a coach</h2></div></div>
+            <form class="form-grid" method="post" th:action="@{/coaches}">
+              <label>Name<input name="name" maxlength="120" required placeholder="e.g. Alex Morgan" /></label>
+              <label>Nationality<input name="nationality" maxlength="80" placeholder="e.g. England" /></label>
+              <label>Club<select name="teamId"><option value="">Unassigned</option>
+                <option th:each="team : ${teams}" th:value="${team.id}" th:text="${team.name + ' · ' + team.league}">Club</option></select></label>
+              <div class="form-actions"><button class="button button-primary" type="submit">Save coach</button></div>
+            </form>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

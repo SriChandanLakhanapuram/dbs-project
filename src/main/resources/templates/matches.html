@@ -55,6 +55,7 @@
                     <th>KICK-OFF</th>
                     <th>FIXTURE</th>
                     <th>COMPETITION</th>
+                    <th>REFEREE</th>
                     <th>RESULT</th>
                     <th>STATUS</th>
                     <th>RECORD SCORE</th>
@@ -84,6 +85,7 @@
                         >Season</small
                       >
                     </td>
+                    <td th:text="${match['referees'] != null ? match['referees'] : 'Not assigned'}">Not assigned</td>
                     <td
                       class="score-cell"
                       th:text="${match.status == 'Scheduled' and match.homeGoals == 0 and match.awayGoals == 0 ? '—' : match.homeGoals + ' - ' + match.awayGoals}"
@@ -136,7 +138,7 @@
                     </td>
                   </tr>
                   <tr th:if="${matches.isEmpty()}">
-                    <td colspan="6" class="empty-row">
+                    <td colspan="7" class="empty-row">
                       <span th:if="${currentTab == 'completed'}">No completed matches match this league filter.</span>
                       <span th:if="${currentTab == 'upcoming'}">No upcoming fixtures match this league filter. Schedule a match below.</span>
                     </td>
@@ -190,7 +192,12 @@
                     th:value="${stadium.id}"
                     th:text="${stadium.name}"
                   ></option></select
-              ></label>
+              ></label
+              ><label>Referee<select name="refereeId">
+                <option value="">Not assigned</option>
+                <option th:each="referee : ${referees}" th:value="${referee.id}"
+                        th:text="${referee.name + (referee.nationality != null ? ' · ' + referee.nationality : '')}">Referee</option>
+              </select></label>
               <div class="form-actions">
                 <button class="button button-primary" type="submit">
                   Add to schedule
